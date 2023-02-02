@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pop/pagination_bloc.dart';
 import 'package:pop/popular.dart';
 
 void main() {
@@ -11,9 +13,12 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: PopularScreen(),
+    return BlocProvider(
+      create: (context) => PaginationBloc(),
+      child: const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: PopularScreen(),
+      ),
     );
   }
 }

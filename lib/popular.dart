@@ -1,11 +1,9 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pop/pagination_bloc.dart';
 
 
-const String baseImageUrl = 'https://image.tmdb.org/t/p/w500';
-String imageUrl(String path)=>'$baseImageUrl$path';
 
 class PopularScreen extends StatefulWidget {
   const PopularScreen({Key? key}) : super(key: key);
@@ -15,35 +13,28 @@ class PopularScreen extends StatefulWidget {
 }
 
 class _PopularScreenState extends State<PopularScreen> {
-  List pop = [];
-  int page = 1;
+  late PaginationBloc paginationBloc;
   ScrollController scrollController = ScrollController();
   bool isLoadMore = false;
 
-  Future<void> fetchData() async {
-    var url = Uri.parse(
-        'https://api.themoviedb.org/3/movie/popular?api_key=740ca5e7fc5fd2770595d34f1ec7ca74&page=$page');
-    var response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      var json = jsonDecode(response.body)['results'] as List;
-      setState(() {
-        pop.addAll(json);
-      });
-    }
-  }
+  // int page = 0;
 
   @override
   void initState() {
-    fetchData();
+    paginationBloc = BlocProvider.of<PaginationBloc>(context);
+     paginationBloc.add(getData());
+print('ssss');
     scrollController.addListener(() async {
       if (scrollController.position.pixels ==
           scrollController.position.maxScrollExtent) {
         setState(() {
           isLoadMore = true;
         });
-        page++;
-        await fetchData();
+        setState(() async{
+           paginationBloc.page++;
+          await paginationBloc.fetchData();
+        });
+
 
         setState(() {
           isLoadMore = false;
@@ -53,8 +44,26 @@ class _PopularScreenState extends State<PopularScreen> {
     super.initState();
   }
 
+@override
+  void dispose() {
+  // scrollController.dispose();
+  super.dispose();
+
+  }
+
   @override
   Widget build(BuildContext context) {
+    // paginationBloc.add(getData());
+
+    return  BlocProvider(
+  create: (context) => PaginationBloc(),
+  child: BlocConsumer<PaginationBloc, PaginationState>(
+  listener: (context, state) {
+    if(state is PaginationSuccess){
+      print('wwwwwwwwww');
+    }
+  },
+  builder: (context, state) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Padding(
@@ -71,9 +80,9 @@ class _PopularScreenState extends State<PopularScreen> {
                 crossAxisSpacing: 5,
                 crossAxisCount: 2,
                 children: List.generate(
-                  isLoadMore ? pop.length+2 : pop.length,
+                  isLoadMore ? paginationBloc.pop.length+2 : paginationBloc.pop.length,
                       (index){
-                    if(index >= pop.length)
+                    if(index >= paginationBloc.pop.length)
                     {
                       return const Center(
                         child: CircularProgressIndicator(
@@ -94,7 +103,7 @@ class _PopularScreenState extends State<PopularScreen> {
                               image: DecorationImage(
                                 fit: BoxFit.cover,
                                 image: NetworkImage(
-                                    imageUrl(pop[index]['poster_path'].toString())
+                                    paginationBloc.imageUrl(paginationBloc.pop[index]['poster_path'].toString())
                                 ),
                               ),
                             ),
@@ -103,7 +112,7 @@ class _PopularScreenState extends State<PopularScreen> {
                             height: 10.0,
                           ),
                           Text(
-                            pop[index]['overview'].toString(),
+                        paginationBloc.pop[index]['overview'].toString(),
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.caption!.copyWith(
@@ -121,6 +130,9 @@ class _PopularScreenState extends State<PopularScreen> {
         ),
       ),
     );
+  },
+),
+);
   }
 
 }
